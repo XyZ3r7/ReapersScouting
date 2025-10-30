@@ -11,7 +11,6 @@ public class Database {
     private ArrayList<String> nameOfVideo = new ArrayList<String>();
     private String name;
     private int ID;
-    private
 
     /*
     missing implementation for video importation.
@@ -50,7 +49,6 @@ public class Database {
     public void saveVideos(String FileName){
         try{
             FileWriter writer = new FileWriter(FileName);
-            writer.wr
         }catch (Exception e){
             System.out.println("The video you imported or the file path is invalid");
         }
