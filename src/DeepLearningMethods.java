@@ -15,7 +15,7 @@ public class DeepLearningMethods {
             return cosineSimilarity(v1, v2);
         } catch (Exception e) {
             /*
-             Main.java must respond with this -1 and prompt user that there's a issue with model
+             Main.java must respond to this -1 and prompt user that there's a issue with model
              */
             return -1;
         }
