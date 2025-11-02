@@ -4,28 +4,36 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 
 public class Database {
-    private ArrayList<Integer> score = new ArrayList<Integer>();
+    private ArrayList<Double> score = new ArrayList<Double>();
     private ArrayList<String> description = new ArrayList<String>();
     private ArrayList<String> teammates = new ArrayList<String>();
     private ArrayList<Image> images = new ArrayList<>();
     private ArrayList<String> nameOfVideo = new ArrayList<String>();
+    private ArrayList<String> Mactches = new ArrayList<String>();
     private String name;
     private int ID;
+    private double highestScore;
 
     /*
     missing implementation for video importation.
     Just need a FileWriter Logic...(MUST CONSIDER THREADS FREE)
      */
-    public Database(int score, String description, String name, int ID, Image images, String VideoName){
-        this.description.add(description);
-        this.score.add((Integer)ID);
-        this.teammates.add(name);
-        this.ID = ID;
-        this.images.add(images);
-        this.nameOfVideo.add(VideoName);
+    public Database(double score, ArrayList<String> description, ArrayList<String> name, int ID, ArrayList<Image> images, ArrayList<String> VideoName, ArrayList<String> teammates, ArrayList<String> Matches){
+        try{
+            this.description = description;
+            this.score.add(score);
+            this.teammates = teammates;
+            this.ID = ID;
+            this.images = images;
+            this.nameOfVideo = VideoName;
+            this.Mactches = Matches;
+            this.highestScore = score;
+        } catch (ClassCastException e) {
+            System.out.println("I want to kill people who can't pass correct type of data");
+        }
     }
 
-    public int getScore(int index){
+    public double getScore(int index){
         try{
 
         } catch (Exception e) {
@@ -54,8 +62,11 @@ public class Database {
         }
     }
 
-    public void setScore(int score, int index){
-        this.score.set(index, score);
+    public void setScore(double score, int index){
+        this.score.set(index, Double.valueOf(score));
+        if (score >= highestScore){
+            highestScore = score;
+        }
     }
 
     public void setDescription(String description, int index){
@@ -68,5 +79,17 @@ public class Database {
 
     public void setID(int ID){
         this.ID = ID;
+    }
+
+    public void setTeammates(int index, String teammateNames){
+        teammates.set(index, teammateNames);
+    }
+
+    public String getMatches(int index){
+        return Mactches.get(index);
+    }
+
+    public double getHighestScore(){
+        return highestScore;
     }
 }
