@@ -63,12 +63,10 @@ public class Main {
             /*
                 Sort the lists of Team based on similarities, from highest to lowest
              */
-            sortedLists = lists;
-            SortingMethods.mergeSort(sortedLists,0, sortedLists.size() - 1);
-
-            /*
-                Returns a lists of score, from highest to lowest, frontend developer decide how many of the lists are going to be picked
-             */
+            if(true){
+                sortedLists = lists;
+                SortingMethods.mergeSort(sortedLists,0, sortedLists.size() - 1);
+            }
 
             /*
                 Detect if user wants to exit the server, normally

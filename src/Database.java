@@ -18,8 +18,9 @@ public class Database {
     missing implementation for video importation.
     Just need a FileWriter Logic...(MUST CONSIDER THREADS FREE)
      */
-    public Database(double score, ArrayList<String> description, ArrayList<String> name, int ID, ArrayList<Image> images, ArrayList<String> VideoName, ArrayList<String> teammates, ArrayList<String> Matches){
+    public Database(double score, ArrayList<String> description, String name, int ID, ArrayList<Image> images, ArrayList<String> VideoName, ArrayList<String> teammates, ArrayList<String> Matches){
         try{
+            this.name = name;
             this.description = description;
             this.score.add(score);
             this.teammates = teammates;
