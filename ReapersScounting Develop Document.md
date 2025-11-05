@@ -9,7 +9,7 @@
 
 ### SortingMethods.java
 * ##### public static void mergeSort(ArrayList\<Database\> list, int left, int right)
-	* Main function of _** MERGE SORT **_, it sorts the Teams based on their highest similarities score, _***FROM HIGHEST TO LOWEST**_
+	* Main function of _**MERGE SORT**_, it sorts the Teams based on their highest similarities score, _***FROM HIGHEST TO LOWEST**_
 
 * ##### public static void merge(ArrayList\<Database\> list, int left, int mid, int right)
 	* Helper method of mergeSort(). Again, just for mergeSort
@@ -25,7 +25,7 @@
 * ### Database.java
 * #### It is the data base that score the team information.
 
-* ##### public Database(double score, ArrayList\<String\> description, ArrayList\<String\> name, int ID, ArrayList\<Image\> images, ArrayList<\String> VideoName, ArrayList<\String> teammates, ArrayList<\String\> Matches)
+* ##### public Database(double score, ArrayList\<String\> description, ArrayList\<String\> name, int ID, ArrayList\<Image\> images, ArrayList\<String> VideoName, ArrayList\<String> teammates, ArrayList\<String> Matches)
 	* The constructor of Database, it stores the score, list of description, ID, photos, The path of the Video records, name of teammates and Matches
 	* [ ] Do we need Video records? It's stressful for the compute stick.
 	* [ ] Do we need different descriptions or not
