@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>FTC Scouting Dashboard</title>
+  <style>
+    body { font-family: sans-serif; margin: 40px; background: #f5f5f5; }
+    .box {
+      background: white; padding: 20px; margin-bottom: 25px;
+      border-radius: 8px; max-width: 600px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    input, textarea, button {
+      width: 100%; margin-top: 8px; padding: 8px; font-size: 14px;
+    }
+    textarea { height: 80px; }
+    button {
+      background: #2563eb; color: white; border: none;
+      border-radius: 4px; cursor: pointer; margin-top: 12px;
+    }
+    button:hover { background: #1e40af; }
+    .result { margin-top: 12px; background: #eef2f7; padding: 10px; border-radius: 4px; }
+    .label { font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h1>FTC Scouting Dashboard</h1>
+
+<div class="box">
+  <h2>Sync Competition</h2>
+  <input id="eventCode" placeholder="Enter Event Code" />
+  <button onclick="syncEvent()">SYNC</button>
+
+  <div id="eventSummary" class="result"></div>
+</div>
+
+<div class="box">
+  <h2>Team itself</h2>
+
+  <input id="my_robot_name" placeholder="Robot Name" />
+  <input id="my_drivetrain" placeholder="Drivetrain" />
+  <input id="my_intake_type" placeholder="Intake Type" />
+  <textarea id="my_strengths" placeholder="Strengths"></textarea>
+  <textarea id="my_weaknesses" placeholder="Weaknesses"></textarea>
+
+  <button onclick="saveMyReport()">Save descriptions</button>
+</div>
+
+<!-- ✅ 编辑其他队伍侦查报告 -->
+<div class="box">
+  <h2>Edit/add other team's scouting report</h2>
+
+  <input id="other_team_id" placeholder="team number" />
+
+  <input id="other_robot_name" placeholder="Robot Name" />
+  <input id="other_drivetrain" placeholder="Drivetrain" />
+  <input id="other_intake_type" placeholder="Intake Type" />
+  <textarea id="other_strengths" placeholder="Strengths"></textarea>
+  <textarea id="other_weaknesses" placeholder="Weaknesses"></textarea>
+
+  <button onclick="saveOtherReport()">Save the report</button>
+</div>
+
+<div class="box">
+  <h2>compare to other team</h2>
+  <input id="compare_team" placeholder="enter team number" />
+  <button onclick="compareTeam()">对比</button>
+
+  <div id="compareResult" class="result"></div>
+</div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+const OUR_TEAM = 22360;
+
+async function syncEvent() {
+  const code = eventCode.value;
+  if (!code) return;
+
+  eventSummary.textContent = "Syncing…";
+
+  await fetch(`${API}/sync/event/${code}`, { method: "POST" });
+
+  const summary = await fetch(`${API}/sync/event/${code}/summary`)
+    .then(r => r.json());
+
+  eventSummary.innerHTML = `
+    <div><span class="label">Competition：</span>${summary.event_code}</div>
+    <div><span class="label">Team number：</span>${summary.teams}</div>
+    <div><span class="label">Comp number：</span>${summary.matches}</div>
+    ${
+      summary.next_match
+        ? `<div><span class="label">Next Comp：</span>${summary.next_match.match_key} @ ${summary.next_match.start_time}</div>`
+        : `<div>No competition time</div>`
+    }
+  `;
+}
+
+/* ✅ 保存本队侦查 */
+async function saveMyReport() {
+  const data = {
+    robot_name: my_robot_name.value,
+    drivetrain: my_drivetrain.value,
+    intake_type: my_intake_type.value,
+    strengths: my_strengths.value,
+    weaknesses: my_weaknesses.value
+  };
+
+  await fetch(`${API}/reports/${OUR_TEAM}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  alert("Report saved1");
+}
+
+/* ✅ 保存其他队伍侦查 */
+async function saveOtherReport() {
+  const team = other_team_id.value;
+  if (!team) return alert("Enter team number");
+
+  const data = {
+    robot_name: other_robot_name.value,
+    drivetrain: other_drivetrain.value,
+    intake_type: other_intake_type.value,
+    strengths: other_strengths.value,
+    weaknesses: other_weaknesses.value
+  };
+
+  await fetch(`${API}/reports/${team}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+
+  alert(`Team ${team} 's report saved`);
+}
+
+async function compareTeam() {
+  const team = compare_team.value;
+  if (!team) return;
+
+  const res = await fetch(`${API}/compare/${team}`).then(r => r.json());
+
+  compareResult.innerHTML = `
+    <div><span class="label">Similarity Score：</span>${res.similarity_0_100}%</div>
+    <pre>${JSON.stringify(res.breakdown, null, 2)}</pre>
+  `;
+}
+</script>
+
+</body>
+</html>
