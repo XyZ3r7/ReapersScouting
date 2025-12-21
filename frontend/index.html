@@ -1,110 +1,245 @@
+
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>FTC Scouting Dashboard</title>
   <style>
-    body { font-family: sans-serif; margin: 40px; background: #f5f5f5; }
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f0f4f8;
+      color: #333;
+    }
+    header {
+      background: #2563eb;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    main {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 0 20px;
+    }
     .box {
-      background: white; padding: 20px; margin-bottom: 25px;
-      border-radius: 8px; max-width: 600px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      background: white;
+      padding: 20px;
+      margin-bottom: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      transition: transform 0.2s ease;
     }
-    input, textarea, button {
-      width: 100%; margin-top: 8px; padding: 8px; font-size: 14px;
+    .box:hover {
+      transform: translateY(-3px);
     }
-    textarea { height: 80px; }
+    h2 {
+      margin-top: 0;
+      color: #2563eb;
+      font-size: 20px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 8px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 15px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 5px rgba(37,99,235,0.3);
+    }
+    textarea {
+      height: 90px;
+      resize: vertical;
+    }
     button {
-      background: #2563eb; color: white; border: none;
-      border-radius: 4px; cursor: pointer; margin-top: 12px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 14px;
+      transition: background 0.3s ease;
     }
-    button:hover { background: #1e40af; }
-    .result { margin-top: 12px; background: #eef2f7; padding: 10px; border-radius: 4px; }
-    .label { font-weight: bold; }
+    button:hover {
+      background: #1e40af;
+    }
+    .result-card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      margin-top: 12px;
+    }
+    .result-card h3 {
+      margin-top: 0;
+      color: #2563eb;
+    }
+    .result-card ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .result-card li {
+      padding: 6px 0;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .result-card li:last-child {
+      border-bottom: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background: #f9fafb;
+    }
   </style>
 </head>
 <body>
 
-<h1>FTC Scouting Dashboard</h1>
+<header>FTC Scouting Dashboard</header>
 
-<div class="box">
-  <h2>Sync Competition</h2>
-  <input id="eventCode" placeholder="Enter Event Code" />
-  <button onclick="syncEvent()">SYNC</button>
+<main>
+  <!-- Sync Competition -->
+  <div class="box">
+    <h2>📡 Sync Competition</h2>
+    <input id="eventCode" placeholder="Enter Event Code" />
+    <button onclick="syncEvent()">Sync Event</button>
+    <div id="eventSummary"></div>
+  </div>
 
-  <div id="eventSummary" class="result"></div>
-</div>
+  <!-- Get Team Report -->
+  <div class="box">
+    <h2>📄 Get Team Report</h2>
+    <input id="team_number" placeholder="Enter Team Number" />
+    <button onclick="getReport(team_number)">Get Report</button>
+    <div id="TeamReport"></div>
+  </div>
 
-<div class="box">
-  <h2>Team itself</h2>
+  <!-- My Team Info -->
+  <div class="box">
+    <h2>🤖 My Team Info</h2>
+    <select id="my_shooting_range">
+      <option value="">Select Shooting Range</option>
+      <option value="near">Near</option>
+      <option value="far">Far</option>
+      <option value="mostly near">Mostly Near</option>
+      <option value="mostly far">Mostly Far</option>
+      <option value="varies">Varies</option>
+    </select>
+    <input id="my_robots_scored" type="number" placeholder="Robots Scored" />
+    <input id="my_max_score_without_pattern" placeholder="Max Score Without Pattern (or unknown/untested)" />
+    <input id="my_max_score_with_pattern" placeholder="Max Score With Pattern (or unknown/untested)" />
+    <select id="my_needs_human_player">
+      <option value="">Needs Human Player?</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <select id="my_has_lifting_for_parking">
+      <option value="">Has Lifting for Parking?</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <textarea id="my_notes" placeholder="Additional Notes"></textarea>
+    <button onclick="saveMyReport()">Save Description</button>
+  </div>
 
-  <input id="my_robot_name" placeholder="Robot Name" />
-  <input id="my_drivetrain" placeholder="Drivetrain" />
-  <input id="my_intake_type" placeholder="Intake Type" />
-  <textarea id="my_strengths" placeholder="Strengths"></textarea>
-  <textarea id="my_weaknesses" placeholder="Weaknesses"></textarea>
+  <!-- Other Team Report -->
+  <div class="box">
+    <h2>🛠 Edit/Add Other Team Report</h2>
+    <input id="other_team_id" placeholder="Team Number" />
+    <select id="other_shooting_range">
+      <option value="">Select Shooting Range</option>
+      <option value="near">Near</option>
+      <option value="far">Far</option>
+      <option value="mostly near">Mostly Near</option>
+      <option value="mostly far">Mostly Far</option>
+      <option value="varies">Varies</option>
+    </select>
+    <input id="other_robots_scored" type="number" placeholder="Robots Scored" />
+    <input id="other_max_score_without_pattern" placeholder="Max Score Without Pattern (or unknown/untested)" />
+    <input id="other_max_score_with_pattern" placeholder="Max Score With Pattern (or unknown/untested)" />
+    <select id="other_needs_human_player">
+      <option value="">Needs Human Player?</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <select id="other_has_lifting_for_parking">
+      <option value="">Has Lifting for Parking?</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+    <textarea id="other_notes" placeholder="Additional Notes"></textarea>
+    <button onclick="saveOtherReport()">Save Report</button>
+  </div>
 
-  <button onclick="saveMyReport()">Save descriptions</button>
-</div>
-
-<!-- ✅ 编辑其他队伍侦查报告 -->
-<div class="box">
-  <h2>Edit/add other team's scouting report</h2>
-
-  <input id="other_team_id" placeholder="team number" />
-
-  <input id="other_robot_name" placeholder="Robot Name" />
-  <input id="other_drivetrain" placeholder="Drivetrain" />
-  <input id="other_intake_type" placeholder="Intake Type" />
-  <textarea id="other_strengths" placeholder="Strengths"></textarea>
-  <textarea id="other_weaknesses" placeholder="Weaknesses"></textarea>
-
-  <button onclick="saveOtherReport()">Save the report</button>
-</div>
-
-<div class="box">
-  <h2>compare to other team</h2>
-  <input id="compare_team" placeholder="enter team number" />
-  <button onclick="compareTeam()">对比</button>
-
-  <div id="compareResult" class="result"></div>
-</div>
+  <!-- Compare Teams -->
+  <div class="box">
+    <h2>⚖ Compare Teams</h2>
+    <input id="compare_team" placeholder="Enter Team Number" />
+    <button onclick="compareTeam()">Compare</button>
+    <div id="compareResult"></div>
+  </div>
+</main>
 
 <script>
-const API = "http://127.0.0.1:8000";
+const API = "http://0.0.0.0:8000";
 const OUR_TEAM = 22360;
 
 async function syncEvent() {
-  const code = eventCode.value;
-  if (!code) return;
+  const code = eventCode.value.trim();
+  if (!code) return alert("Please enter an event code");
 
-  eventSummary.textContent = "Syncing…";
+  eventSummary.innerHTML = "<p>Syncing...</p>";
 
   await fetch(`${API}/sync/event/${code}`, { method: "POST" });
 
-  const summary = await fetch(`${API}/sync/event/${code}/summary`)
-    .then(r => r.json());
+  const summary = await fetch(`${API}/sync/event/${code}/summary`).then(r => r.json());
 
   eventSummary.innerHTML = `
-    <div><span class="label">Competition：</span>${summary.event_code}</div>
-    <div><span class="label">Team number：</span>${summary.teams}</div>
-    <div><span class="label">Comp number：</span>${summary.matches}</div>
-    ${
-      summary.next_match
-        ? `<div><span class="label">Next Comp：</span>${summary.next_match.match_key} @ ${summary.next_match.start_time}</div>`
-        : `<div>No competition time</div>`
-    }
+    <div class="result-card">
+      <h3>Event Summary</h3>
+      <ul>
+        <li><strong>Event Code:</strong> ${summary.event_code}</li>
+        <li><strong>Teams:</strong> ${summary.teams}</li>
+        <li><strong>Matches:</strong> ${summary.matches}</li>
+        ${
+          summary.next_match
+            ? `<li><strong>Next Match:</strong> ${summary.next_match.match_key} @ ${summary.next_match.start_time}</li>`
+            : `<li>No upcoming match</li>`
+        }
+      </ul>
+    </div>
   `;
 }
 
-/* ✅ 保存本队侦查 */
 async function saveMyReport() {
   const data = {
-    robot_name: my_robot_name.value,
-    drivetrain: my_drivetrain.value,
-    intake_type: my_intake_type.value,
-    strengths: my_strengths.value,
-    weaknesses: my_weaknesses.value
+    shooting_range: my_shooting_range.value,
+    robots_scored: parseInt(my_robots_scored.value),
+    max_score_without_pattern: my_max_score_without_pattern.value,
+    max_score_with_pattern: my_max_score_with_pattern.value,
+    needs_human_player: my_needs_human_player.value,
+    has_lifting_for_parking: my_has_lifting_for_parking.value,
+    notes: my_notes.value
   };
 
   await fetch(`${API}/reports/${OUR_TEAM}`, {
@@ -113,20 +248,21 @@ async function saveMyReport() {
     body: JSON.stringify(data)
   });
 
-  alert("Report saved1");
+  alert("Your team report has been saved");
 }
 
-/* ✅ 保存其他队伍侦查 */
 async function saveOtherReport() {
-  const team = other_team_id.value;
-  if (!team) return alert("Enter team number");
+  const team = other_team_id.value.trim();
+  if (!team) return alert("Please enter a team number");
 
   const data = {
-    robot_name: other_robot_name.value,
-    drivetrain: other_drivetrain.value,
-    intake_type: other_intake_type.value,
-    strengths: other_strengths.value,
-    weaknesses: other_weaknesses.value
+    shooting_range: other_shooting_range.value,
+    robots_scored: parseInt(other_robots_scored.value),
+    max_score_without_pattern: other_max_score_without_pattern.value,
+    max_score_with_pattern: other_max_score_with_pattern.value,
+    needs_human_player: other_needs_human_player.value,
+    has_lifting_for_parking: other_has_lifting_for_parking.value,
+    notes: other_notes.value
   };
 
   await fetch(`${API}/reports/${team}`, {
@@ -135,19 +271,47 @@ async function saveOtherReport() {
     body: JSON.stringify(data)
   });
 
-  alert(`Team ${team} 's report saved`);
+  alert(`Report for team ${team} has been saved`);
+}
+
+async function getReport(team_id){
+  team_id = team_id.value.trim();
+  if(!team_id) return alert("Please enter a team number");
+
+  const data = await fetch(`${API}/reports/${team_id}`).then(r => r.json());
+
+  let html = `<div class="result-card"><h3>Team ${data.team_number} Report</h3><ul>`;
+  for (const [key, value] of Object.entries(data)) {
+    if (value && key !== "team_number") {
+      html += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</li>`;
+    }
+  }
+  html += `</ul></div>`;
+  TeamReport.innerHTML = html;
 }
 
 async function compareTeam() {
-  const team = compare_team.value;
-  if (!team) return;
+  const team = compare_team.value.trim();
+  if (!team) return alert("Please enter a team number");
 
   const res = await fetch(`${API}/compare/${team}`).then(r => r.json());
 
-  compareResult.innerHTML = `
-    <div><span class="label">Similarity Score：</span>${res.similarity_0_100}%</div>
-    <pre>${JSON.stringify(res.breakdown, null, 2)}</pre>
+  let breakdownTable = "<table><tr><th>Field</th><th>Score</th><th>Detail</th></tr>";
+  for (const [key, val] of Object.entries(res.breakdown)) {
+    breakdownTable += `<tr><td>${key}</td><td>${val.score ?? "-"}</td><td>${JSON.stringify(val.detail)}</td></tr>`;
+  }
+  breakdownTable += "</table>";
+
+  let html = `
+    <div class="result-card">
+      <h3>Comparison Result</h3>
+      <ul>
+        <li><strong>Similarity Score:</strong> ${res.similarity_0_100}%</li>
+      </ul>
+      ${breakdownTable}
+    </div>
   `;
+  compareResult.innerHTML = html;
 }
 </script>
 
