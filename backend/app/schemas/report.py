@@ -1,40 +1,32 @@
-
-from __future__ import annotations
-from pydantic import BaseModel, Field
-from typing import Literal, Union
+from datetime import date, datetime
+from pydantic import BaseModel
 
 
-class TeamReportUpsert(BaseModel):
-    shooting_range: Literal["near", "far", "mostly near", "mostly far", "varies"] = Field(
-        description="Is the shooting range near or far?"
-    )
-
-    robots_scored: int = Field(
-        ge=0,
-        description="Number of robots this robot can score"
-    )
-
-    max_score_without_pattern: Union[int, Literal["unknown", "untested"]] = Field(
-        description="Maximum score without pattern (integer or unknown/untested)"
-    )
-
-    max_score_with_pattern: Union[int, Literal["unknown", "untested"]] = Field(
-        description="Maximum score with pattern (integer or unknown/untested)"
-    )
-
-    needs_human_player: Literal["yes", "no"] = Field(
-        description="Does the robot need a human player?"
-    )
-
-    has_lifting_for_parking: Literal["yes", "no"] = Field(
-        description="Does the robot have lifting for parking?"
-    )
-
-    notes: str = Field(
-        default="",
-        description="Additional description about the robot"
-    )
+class MatchReportBase(BaseModel):
+    match_date: date | None = None
+    shooting_range: str | None = None
+    robots_scored: int | None = None
+    max_score_without_pattern: str | None = None
+    max_score_with_pattern: str | None = None
+    needs_human_player: str | None = None
+    has_lifting_for_parking: str | None = None
+    notes: str | None = None
 
 
-class TeamReportOut(TeamReportUpsert):
-    team_number: int
+class MatchReportCreate(MatchReportBase):
+    pass
+
+
+class MatchReportUpdate(MatchReportBase):
+    pass
+
+
+class MatchReportOut(MatchReportBase):
+    id: int
+    match_id: int
+    team_id: int
+    match_number: int | None = None
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

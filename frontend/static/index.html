@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,7 +21,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     main {
-      max-width: 900px;
+      max-width: 1100px;
       margin: 30px auto;
       padding: 0 20px;
     }
@@ -82,34 +81,68 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.08);
       margin-top: 12px;
     }
-    .result-card h3 {
-      margin-top: 0;
-      color: #2563eb;
-    }
-    .result-card ul {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    .result-card li {
-      padding: 6px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    .result-card li:last-child {
-      border-bottom: none;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    .match-list {
       margin-top: 10px;
     }
-    th, td {
+    .match-item {
       border: 1px solid #e5e7eb;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
       background: #f9fafb;
+    }
+    .match-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .match-title {
+      font-weight: bold;
+      color: #111827;
+    }
+    .team-tags {
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .team-tag {
+      background: #e5f0ff;
+      color: #1d4ed8;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .team-tag.red {
+      background: #fee2e2;
+      color: #b91c1c;
+    }
+    .team-tag.blue {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+    .flex-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .flex-col {
+      flex: 1 1 300px;
+    }
+    .label {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+    .small-input {
+      width: 100%;
+    }
+    .section-title {
+      font-weight: bold;
+      margin-top: 10px;
+      color: #111827;
     }
   </style>
 </head>
@@ -118,202 +151,327 @@
 <header>FTC Scouting Dashboard</header>
 
 <main>
-  <!-- Sync Competition -->
   <div class="box">
     <h2>📡 Sync Competition</h2>
-    <input id="eventCode" placeholder="Enter Event Code" />
-    <button onclick="syncEvent()">Sync Event</button>
+    <input id="eventCode" placeholder="Enter Event Code (e.g. NYQNY)" />
+    <button id="btnSync">Sync Event</button>
     <div id="eventSummary"></div>
   </div>
 
-  <!-- Get Team Report -->
   <div class="box">
-    <h2>📄 Get Team Report</h2>
-    <input id="team_number" placeholder="Enter Team Number" />
-    <button onclick="getReport(team_number)">Get Report</button>
-    <div id="TeamReport"></div>
+    <h2>📅 Matches & Teams</h2>
+    <div id="matchesContainer">
+      <p>Sync an event to load matches.</p>
+    </div>
   </div>
 
-  <!-- My Team Info -->
   <div class="box">
-    <h2>🤖 My Team Info</h2>
-    <select id="my_shooting_range">
-      <option value="">Select Shooting Range</option>
-      <option value="near">Near</option>
-      <option value="far">Far</option>
-      <option value="mostly near">Mostly Near</option>
-      <option value="mostly far">Mostly Far</option>
-      <option value="varies">Varies</option>
-    </select>
-    <input id="my_robots_scored" type="number" placeholder="Robots Scored" />
-    <input id="my_max_score_without_pattern" placeholder="Max Score Without Pattern (or unknown/untested)" />
-    <input id="my_max_score_with_pattern" placeholder="Max Score With Pattern (or unknown/untested)" />
-    <select id="my_needs_human_player">
-      <option value="">Needs Human Player?</option>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <select id="my_has_lifting_for_parking">
-      <option value="">Has Lifting for Parking?</option>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <textarea id="my_notes" placeholder="Additional Notes"></textarea>
-    <button onclick="saveMyReport()">Save Description</button>
+    <h2>📝 Edit Report for Selected Team</h2>
+    <div id="currentContext" style="margin-bottom:8px; font-size:14px; color:#4b5563;">
+      No match/team selected.
+    </div>
+    <div class="flex-row">
+      <div class="flex-col">
+        <div class="label">Match Date</div>
+        <input id="report_match_date" type="date" class="small-input" />
+
+        <div class="label">Shooting Range</div>
+        <select id="report_shooting_range" class="small-input">
+          <option value="">Select Shooting Range</option>
+          <option value="near">Near</option>
+          <option value="far">Far</option>
+          <option value="mostly near">Mostly Near</option>
+          <option value="mostly far">Mostly Far</option>
+          <option value="varies">Varies</option>
+        </select>
+
+        <div class="label">Robots Scored</div>
+        <input id="report_robots_scored" type="number" class="small-input" />
+
+        <div class="label">Max Score Without Pattern</div>
+        <input id="report_max_score_without_pattern" class="small-input" />
+
+        <div class="label">Max Score With Pattern</div>
+        <input id="report_max_score_with_pattern" class="small-input" />
+      </div>
+
+      <div class="flex-col">
+        <div class="label">Needs Human Player?</div>
+        <select id="report_needs_human_player" class="small-input">
+          <option value="">Select</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+
+        <div class="label">Has Lifting for Parking?</div>
+        <select id="report_has_lifting_for_parking" class="small-input">
+          <option value="">Select</option>
+          <option value="yes">Yes</option>
+          <option value="no">No</option>
+        </select>
+
+        <div class="label">Notes</div>
+        <textarea id="report_notes" class="small-input" placeholder="Observations, strengths, weaknesses..."></textarea>
+
+        <button id="btnSaveReport">Save Report</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Other Team Report -->
   <div class="box">
-    <h2>🛠 Edit/Add Other Team Report</h2>
-    <input id="other_team_id" placeholder="Team Number" />
-    <select id="other_shooting_range">
-      <option value="">Select Shooting Range</option>
-      <option value="near">Near</option>
-      <option value="far">Far</option>
-      <option value="mostly near">Mostly Near</option>
-      <option value="mostly far">Mostly Far</option>
-      <option value="varies">Varies</option>
-    </select>
-    <input id="other_robots_scored" type="number" placeholder="Robots Scored" />
-    <input id="other_max_score_without_pattern" placeholder="Max Score Without Pattern (or unknown/untested)" />
-    <input id="other_max_score_with_pattern" placeholder="Max Score With Pattern (or unknown/untested)" />
-    <select id="other_needs_human_player">
-      <option value="">Needs Human Player?</option>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <select id="other_has_lifting_for_parking">
-      <option value="">Has Lifting for Parking?</option>
-      <option value="yes">Yes</option>
-      <option value="no">No</option>
-    </select>
-    <textarea id="other_notes" placeholder="Additional Notes"></textarea>
-    <button onclick="saveOtherReport()">Save Report</button>
-  </div>
-
-  <!-- Compare Teams -->
-  <div class="box">
-    <h2>⚖ Compare Teams</h2>
-    <input id="compare_team" placeholder="Enter Team Number" />
-    <button onclick="compareTeam()">Compare</button>
-    <div id="compareResult"></div>
+    <h2>📊 Reports for a Team</h2>
+    <input id="search_team_number" placeholder="Enter Team Number" />
+    <button id="btnLoadTeamReports">Load Reports</button>
+    <div id="teamReportsContainer"></div>
   </div>
 </main>
 
 <script>
-// const API = "http://0.0.0.0:8000";
-const API = "/api";
-const OUR_TEAM = 22360;
+const API = "http://localhost:8000"; // adjust if needed
 
-async function syncEvent() {
-  const code = eventCode.value.trim();
-  if (!code) return alert("Please enter an event code");
+const elEventCode = document.getElementById("eventCode");
+const elBtnSync = document.getElementById("btnSync");
+const elEventSummary = document.getElementById("eventSummary");
+const elMatchesContainer = document.getElementById("matchesContainer");
 
-  eventSummary.innerHTML = "<p>Syncing...</p>";
+const elCurrentContext = document.getElementById("currentContext");
+const elReportDate = document.getElementById("report_match_date");
+const elReportShooting = document.getElementById("report_shooting_range");
+const elReportRobots = document.getElementById("report_robots_scored");
+const elReportMaxNoPattern = document.getElementById("report_max_score_without_pattern");
+const elReportMaxPattern = document.getElementById("report_max_score_with_pattern");
+const elReportNeedsHP = document.getElementById("report_needs_human_player");
+const elReportHasLift = document.getElementById("report_has_lifting_for_parking");
+const elReportNotes = document.getElementById("report_notes");
+const elBtnSaveReport = document.getElementById("btnSaveReport");
 
-  await fetch(`${API}/sync/event/${code}`, { method: "POST" });
+const elSearchTeamNumber = document.getElementById("search_team_number");
+const elBtnLoadTeamReports = document.getElementById("btnLoadTeamReports");
+const elTeamReportsContainer = document.getElementById("teamReportsContainer");
 
-  const summary = await fetch(`${API}/sync/event/${code}/summary`).then(r => r.json());
+let currentMatchId = null;
+let currentTeamNumber = null;
 
-  eventSummary.innerHTML = `
-    <div class="result-card">
-      <h3>Event Summary</h3>
-      <ul>
-        <li><strong>Event Code:</strong> ${summary.event_code}</li>
-        <li><strong>Teams:</strong> ${summary.teams}</li>
-        <li><strong>Matches:</strong> ${summary.matches}</li>
-        ${
-          summary.next_match
-            ? `<li><strong>Next Match:</strong> ${summary.next_match.match_key} @ ${summary.next_match.start_time}</li>`
-            : `<li>No upcoming match</li>`
-        }
-      </ul>
-    </div>
-  `;
+// Helpers
+function formatDateInputValue(isoDate) {
+  if (!isoDate) return "";
+  const d = new Date(isoDate);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
-async function saveMyReport() {
-  const data = {
-    shooting_range: my_shooting_range.value,
-    robots_scored: parseInt(my_robots_scored.value),
-    max_score_without_pattern: my_max_score_without_pattern.value,
-    max_score_with_pattern: my_max_score_with_pattern.value,
-    needs_human_player: my_needs_human_player.value,
-    has_lifting_for_parking: my_has_lifting_for_parking.value,
-    notes: my_notes.value
-  };
+// Sync event
+elBtnSync.addEventListener("click", async () => {
+  const code = elEventCode.value.trim();
+  if (!code) {
+    alert("Enter an event code");
+    return;
+  }
 
-  await fetch(`${API}/reports/${OUR_TEAM}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+  elEventSummary.innerHTML = "<p>Syncing...</p>";
+  elMatchesContainer.innerHTML = "<p>Loading matches...</p>";
 
-  alert("Your team report has been saved");
-}
-
-async function saveOtherReport() {
-  const team = other_team_id.value.trim();
-  if (!team) return alert("Please enter a team number");
-
-  const data = {
-    shooting_range: other_shooting_range.value,
-    robots_scored: parseInt(other_robots_scored.value),
-    max_score_without_pattern: other_max_score_without_pattern.value,
-    max_score_with_pattern: other_max_score_with_pattern.value,
-    needs_human_player: other_needs_human_player.value,
-    has_lifting_for_parking: other_has_lifting_for_parking.value,
-    notes: other_notes.value
-  };
-
-  await fetch(`${API}/reports/${team}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
-
-  alert(`Report for team ${team} has been saved`);
-}
-
-async function getReport(team_id){
-  team_id = team_id.value.trim();
-  if(!team_id) return alert("Please enter a team number");
-
-  const data = await fetch(`${API}/reports/${team_id}`).then(r => r.json());
-
-  let html = `<div class="result-card"><h3>Team ${data.team_number} Report</h3><ul>`;
-  for (const [key, value] of Object.entries(data)) {
-    if (value && key !== "team_number") {
-      html += `<li><strong>${key.replace(/_/g, ' ')}:</strong> ${value}</li>`;
+  try {
+    const res = await fetch(`${API}/sync/event/${encodeURIComponent(code)}`, { method: "POST" });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Sync failed with ${res.status}`);
     }
+    const summaryRes = await fetch(`${API}/sync/event/${encodeURIComponent(code)}/summary`);
+    const summary = await summaryRes.json();
+
+    elEventSummary.innerHTML = `
+      <div class="result-card">
+        <h3>Event Summary</h3>
+        <p><strong>Event Code:</strong> ${summary.event_code}</p>
+        <p><strong>Season:</strong> ${summary.season}</p>
+        <p><strong>Teams:</strong> ${summary.teams}</p>
+        <p><strong>Matches:</strong> ${summary.matches}</p>
+      </div>
+    `;
+
+    await loadMatchesForEvent(code);
+  } catch (err) {
+    console.error(err);
+    elEventSummary.innerHTML = `<p style="color:red;">${err.message}</p>`;
+    elMatchesContainer.innerHTML = `<p style="color:red;">Failed to load matches.</p>`;
   }
-  html += `</ul></div>`;
-  TeamReport.innerHTML = html;
+});
+
+// Load matches for event
+async function loadMatchesForEvent(eventCode) {
+  const res = await fetch(`${API}/matches/event/${encodeURIComponent(eventCode)}`);
+  if (!res.ok) {
+    elMatchesContainer.innerHTML = `<p style="color:red;">Failed to load matches</p>`;
+    return;
+  }
+  const matches = await res.json();
+  if (!matches.length) {
+    elMatchesContainer.innerHTML = "<p>No matches found for this event.</p>";
+    return;
+  }
+
+  let html = '<div class="match-list">';
+  for (const m of matches) {
+    const start = m.start_time ? new Date(m.start_time).toLocaleString() : "-";
+    const redTeams = [];
+    const blueTeams = [];
+    for (const p of m.participations) {
+      const label = `#${p.team.team_number}`;
+      if (p.alliance === "red") redTeams.push(label);
+      else if (p.alliance === "blue") blueTeams.push(label);
+    }
+
+    html += `
+      <div class="match-item">
+        <div class="match-header" onclick="toggleMatchDetails('${m.id}')">
+          <div class="match-title">${m.match_type || ""} ${m.match_number || ""} (${m.match_key})</div>
+          <div style="font-size:13px; color:#6b7280;">${start}</div>
+        </div>
+        <div id="match-details-${m.id}" style="display:none; margin-top:8px;">
+          <div class="section-title">Teams</div>
+          <div class="team-tags">
+    `;
+
+    for (const p of m.participations) {
+      const cls = p.alliance === "red" ? "team-tag red" : "team-tag blue";
+      html += `
+        <div class="${cls}" onclick="selectMatchTeam(event, ${m.id}, ${p.team.team_number}, '${m.match_type || ""}', ${m.match_number || "null"})">
+          ${p.alliance?.toUpperCase() || ""} ${p.station || ""} - #${p.team.team_number}
+        </div>
+      `;
+    }
+
+    html += `
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  html += "</div>";
+
+  elMatchesContainer.innerHTML = html;
 }
 
-async function compareTeam() {
-  const team = compare_team.value.trim();
-  if (!team) return alert("Please enter a team number");
+// Expose functions to global for inline onclick
+window.toggleMatchDetails = function (matchId) {
+  const el = document.getElementById(`match-details-${matchId}`);
+  if (!el) return;
+  el.style.display = el.style.display === "none" ? "block" : "none";
+};
 
-  const res = await fetch(`${API}/compare/${team}`).then(r => r.json());
+window.selectMatchTeam = async function (ev, matchId, teamNumber, matchType, matchNumber) {
+  ev.stopPropagation();
+  currentMatchId = matchId;
+  currentTeamNumber = teamNumber;
 
-  let breakdownTable = "<table><tr><th>Field</th><th>Score</th><th>Detail</th></tr>";
-  for (const [key, val] of Object.entries(res.breakdown)) {
-    breakdownTable += `<tr><td>${key}</td><td>${val.score ?? "-"}</td><td>${JSON.stringify(val.detail)}</td></tr>`;
+  elCurrentContext.textContent = `Editing report for Match ID ${matchId} (${matchType || ""} ${matchNumber || ""}), Team #${teamNumber}`;
+
+  // Clear form first
+  elReportDate.value = "";
+  elReportShooting.value = "";
+  elReportRobots.value = "";
+  elReportMaxNoPattern.value = "";
+  elReportMaxPattern.value = "";
+  elReportNeedsHP.value = "";
+  elReportHasLift.value = "";
+  elReportNotes.value = "";
+
+  // Try load existing
+  try {
+    const res = await fetch(`${API}/reports/matches/${matchId}/teams/${teamNumber}`);
+    if (!res.ok) {
+      return; // no existing report
+    }
+    const data = await res.json();
+    if (data.match_date) {
+      elReportDate.value = data.match_date;
+    }
+    elReportShooting.value = data.shooting_range || "";
+    elReportRobots.value = data.robots_scored ?? "";
+    elReportMaxNoPattern.value = data.max_score_without_pattern || "";
+    elReportMaxPattern.value = data.max_score_with_pattern || "";
+    elReportNeedsHP.value = data.needs_human_player || "";
+    elReportHasLift.value = data.has_lifting_for_parking || "";
+    elReportNotes.value = data.notes || "";
+  } catch (err) {
+    console.error("Failed to load existing report", err);
   }
-  breakdownTable += "</table>";
+};
 
-  let html = `
-    <div class="result-card">
-      <h3>Comparison Result</h3>
-      <ul>
-        <li><strong>Similarity Score:</strong> ${res.similarity_0_100}%</li>
-      </ul>
-      ${breakdownTable}
-    </div>
-  `;
-  compareResult.innerHTML = html;
-}
+// Save report
+elBtnSaveReport.addEventListener("click", async () => {
+  if (!currentMatchId || !currentTeamNumber) {
+    alert("Select a match and team first.");
+    return;
+  }
+  const payload = {
+    match_date: elReportDate.value || null,
+    shooting_range: elReportShooting.value || null,
+    robots_scored: elReportRobots.value ? parseInt(elReportRobots.value, 10) : null,
+    max_score_without_pattern: elReportMaxNoPattern.value || null,
+    max_score_with_pattern: elReportMaxPattern.value || null,
+    needs_human_player: elReportNeedsHP.value || null,
+    has_lifting_for_parking: elReportHasLift.value || null,
+    notes: elReportNotes.value || null,
+  };
+
+  try {
+    const res = await fetch(`${API}/reports/matches/${currentMatchId}/teams/${currentTeamNumber}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Save failed with ${res.status}`);
+    }
+    alert("Report saved");
+  } catch (err) {
+    alert(`Failed to save report: ${err.message}`);
+  }
+});
+
+// Load reports for a team
+elBtnLoadTeamReports.addEventListener("click", async () => {
+  const team = elSearchTeamNumber.value.trim();
+  if (!team) {
+    alert("Enter a team number");
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/reports/teams/${team}`);
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || `Failed with ${res.status}`);
+    }
+    const list = await res.json();
+    if (!list.length) {
+      elTeamReportsContainer.innerHTML = "<p>No reports for this team yet.</p>";
+      return;
+    }
+    let html = "";
+    for (const r of list) {
+      html += `
+        <div class="result-card">
+          <div><strong>Match ID:</strong> ${r.match_id}</div>
+          <div><strong>Match Number:</strong> ${r.match_number ?? "-"}</div>
+          <div><strong>Date:</strong> ${r.match_date ?? "-"}</div>
+          <div><strong>Shooting Range:</strong> ${r.shooting_range ?? "-"}</div>
+          <div><strong>Robots Scored:</strong> ${r.robots_scored ?? "-"}</div>
+          <div><strong>Needs HP:</strong> ${r.needs_human_player ?? "-"}</div>
+          <div><strong>Has Lift:</strong> ${r.has_lifting_for_parking ?? "-"}</div>
+          <div><strong>Notes:</strong> ${r.notes ?? "-"}</div>
+        </div>
+      `;
+    }
+    elTeamReportsContainer.innerHTML = html;
+  } catch (err) {
+    elTeamReportsContainer.innerHTML = `<p style="color:red;">${err.message}</p>`;
+  }
+});
 </script>
 
 </body>

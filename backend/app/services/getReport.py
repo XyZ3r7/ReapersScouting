@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from rapidfuzz.fuzz import token_set_ratio
 from sqlalchemy.orm import Session
-from app.models.report import TeamReport
+from app.models.match import TeamReport
 from app.core.config import settings
 
 def _norm_text(s: str | None) -> str:

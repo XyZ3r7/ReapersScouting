@@ -2,22 +2,27 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.db import Base, engine
-from app.routers import health, sync, reports, compare
+from app.core.config import settings
+from app.routers import health, sync, matches, reports
 
-app = FastAPI(title="FTC Scouting Backend", version="0.1.0")
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(title="FTC Scouting Backend", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 app.include_router(health.router)
 app.include_router(sync.router)
+app.include_router(matches.router)
 app.include_router(reports.router)
-app.include_router(compare.router)
 
-@app.on_event("startup")
-def on_startup():
-    Base.metadata.create_all(bind=engine)
+
+@app.get("/")
+def root():
+    return {"message": "FTC Scouting Backend"}

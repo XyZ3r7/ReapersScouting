@@ -1,17 +1,18 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
-
-    DATABASE_URL: str
-    OUR_TEAM_ID: int
+    DATABASE_URL: str = "sqlite:///./scouting.db"
 
     FIRST_API_USERNAME: str
     FIRST_API_TOKEN: str
     FIRST_API_SEASON: int = 2024
 
-    FIRST_API_BASE_URL: str = "https://ftc-api.firstinspires.org"
+    OUR_TEAM_ID: int = 0
 
+    BACKEND_CORS_ORIGINS: list[str] = ["*"]
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 settings = Settings()

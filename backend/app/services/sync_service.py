@@ -1,119 +1,162 @@
-import json
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Tuple
+
 from sqlalchemy.orm import Session
 
-from app.models.ftcevent import Team, Match, MatchParticipation, Event
-from app.services.first_api import FirstFtcApi
 from app.core.config import settings
-
-
-def _safe_get(d: dict, *keys, default=None):
-    cur = d
-    for k in keys:
-        if not isinstance(cur, dict) or k not in cur:
-            return default
-        cur = cur[k]
-    return cur
+from app.models.team import Team
+from app.models.match import Match
+from app.models.match_participation import MatchParticipation
+from app.services.first_api import FirstFtcApi
 
 
 class SyncService:
-    def __init__(self):
+    def __init__(self) -> None:
         self.api = FirstFtcApi()
 
-    async def sync_event(self, db: Session, event_code: str) -> dict:
+    async def sync_event(self, db: Session, event_code: str) -> Tuple[int, int, int]:
         season = settings.FIRST_API_SEASON
 
-        # 1) Teams
-        teams_payload = await self.api.get_event_teams(season, event_code)
-        teams = teams_payload.get("teams") or teams_payload.get("Teams") or []
-        upsert_team_count = 0
-        for t in teams:
-            num = t.get("teamNumber") or t.get("team_number")
-            if not num:
-                continue
-            row = db.get(Team, int(num))
-            if not row:
-                row = Team(team_number=int(num))
-                db.add(row)
-            row.name = t.get("name")
-            row.city = t.get("city")
-            row.state_prov = t.get("stateProv") or t.get("state_prov")
-            row.country = t.get("country")
-            upsert_team_count += 1
-
-        # 2) Schedule (times)
         schedule_payload = await self.api.get_schedule(season, event_code)
-        sched_matches = schedule_payload.get("schedule") or schedule_payload.get("Schedule") or []
+        sched_matches = schedule_payload.get("schedule") or []
 
-        # key -> start_time
-        start_time_by_key: dict[str, str] = {}
+        start_time_by_match_number: dict[int, datetime | None] = {}
         for m in sched_matches:
-            mk = (m.get("matchNumber") or m.get("match_number") or m.get("matchKey") or m.get("match_key"))
-            if mk is None:
+            match_number = m.get("matchNumber")
+            if match_number is None:
                 continue
-            start_time_by_key[str(mk)] = m.get("startTime") or m.get("start_time")
+            start_raw = m.get("startTime")
+            if isinstance(start_raw, str):
+                try:
+                    start_time = datetime.fromisoformat(start_raw.replace("Z", "+00:00"))
+                except Exception:
+                    start_time = None
+            else:
+                start_time = None
+            start_time_by_match_number[int(match_number)] = start_time
 
-        # 3) Results (scores + participants + breakdown)
+        # 2. 拉 match results（swagger: EventMatchResultsModel_Version2）
         results_payload = await self.api.get_results(season, event_code)
-        res_matches = results_payload.get("matches") or results_payload.get("Matches") or []
+        res_matches = results_payload.get("matches") or []
 
+        team_numbers: set[int] = set()
+        for m in res_matches:
+            teams_list = m.get("teams") or []
+            for t in teams_list:
+                num = t.get("teamNumber")
+                if num is not None:
+                    try:
+                        team_numbers.add(int(num))
+                    except Exception:
+                        pass
+
+        # 4. Upsert Team
+        upsert_team_count = 0
+        for num in sorted(team_numbers):
+            row = db.query(Team).filter(Team.team_number == num).one_or_none()
+            if not row:
+                row = Team(team_number=num, from_event_sync=True)
+                db.add(row)
+                upsert_team_count += 1
+
+        db.flush()
+
+        # 5. Upsert Match + Participation
         upsert_match_count = 0
         upsert_participation_count = 0
 
         for m in res_matches:
-            match_key = str(m.get("matchNumber") or m.get("match_number") or m.get("matchKey") or m.get("match_key"))
-            if not match_key:
+            match_number = m.get("matchNumber")
+            if match_number is None:
                 continue
+            match_number = int(match_number)
 
-            match_type = m.get("tournamentLevel") or m.get("matchType") or m.get("match_type")
-            red_score = _safe_get(m, "scoreRedFinal", default=None) or m.get("redScore")
-            blue_score = _safe_get(m, "scoreBlueFinal", default=None) or m.get("blueScore")
+            match_type = m.get("tournamentLevel")
+            match_key = str(match_number)
+
+            score_red_final = m.get("scoreRedFinal")
+            score_blue_final = m.get("scoreBlueFinal")
 
             db_match = (
                 db.query(Match)
-                .filter(Match.season == season, Match.event_code == event_code, Match.match_key == match_key)
+                .filter(
+                    Match.season == season,
+                    Match.event_code == event_code,
+                    Match.match_number == match_number,
+                )
                 .one_or_none()
             )
             if not db_match:
-                db_match = Match(season=season, event_code=event_code, match_key=match_key)
+                db_match = Match(
+                    season=season,
+                    event_code=event_code,
+                    match_key=match_key,
+                    match_number=match_number,
+                )
                 db.add(db_match)
 
-            db_match.match_type = str(match_type) if match_type is not None else None
-            db_match.start_time = start_time_by_key.get(match_key) or m.get("startTime") or m.get("start_time")
-            db_match.red_score = int(red_score) if red_score is not None else None
-            db_match.blue_score = int(blue_score) if blue_score is not None else None
+            db_match.match_type = match_type
+            db_match.start_time = start_time_by_match_number.get(match_number)
+            db_match.red_score = int(score_red_final) if score_red_final is not None else None
+            db_match.blue_score = int(score_blue_final) if score_blue_final is not None else None
+
             db.flush()
 
-            alliances = m.get("alliances") or {}
-            for alliance_name in ["red", "blue"]:
-                a = alliances.get(alliance_name) or {}
-                teams_list = a.get("teams") or a.get("Teams") or []
+            teams_list = m.get("teams") or []
+            for t in teams_list:
+                num = t.get("teamNumber")
+                station = (t.get("station") or "").strip()  # "Red1" / "Blue2"
+                if num is None or not station:
+                    continue
 
-                for idx, p in enumerate(teams_list, start=1):
-                    team_num = p.get("teamNumber") or p.get("team_number") or p.get("team")
-                    if not team_num:
-                        continue
+                try:
+                    team_num = int(num)
+                except Exception:
+                    continue
 
-                    part = (
-                        db.query(MatchParticipation)
-                        .filter(MatchParticipation.match_id == db_match.id, MatchParticipation.team_number == int(team_num))
-                        .one_or_none()
+                alliance = None
+                pos = None
+                s_upper = station.upper()
+                if s_upper.startswith("RED"):
+                    alliance = "red"
+                    try:
+                        pos = int(s_upper.replace("RED", ""))
+                    except Exception:
+                        pos = None
+                elif s_upper.startswith("BLUE"):
+                    alliance = "blue"
+                    try:
+                        pos = int(s_upper.replace("BLUE", ""))
+                    except Exception:
+                        pos = None
+
+                team = db.query(Team).filter(Team.team_number == team_num).one_or_none()
+                if not team:
+                    team = Team(team_number=team_num, from_event_sync=True)
+                    db.add(team)
+                    db.flush()
+
+                part = (
+                    db.query(MatchParticipation)
+                    .filter(
+                        MatchParticipation.match_id == db_match.id,
+                        MatchParticipation.team_id == team.id,
                     )
-                    if not part:
-                        part = MatchParticipation(match_id=db_match.id, team_number=int(team_num))
-                        db.add(part)
+                    .one_or_none()
+                )
+                if not part:
+                    part = MatchParticipation(match_id=db_match.id, team_id=team.id)
+                    db.add(part)
 
-                    part.alliance = alliance_name
-                    part.station = idx
-                    part.score_detail_json = json.dumps(p.get("scoreDetails") or p.get("score_detail") or p.get("scoreBreakdown") or {})
-                    upsert_participation_count += 1
+                part.alliance = alliance
+                part.station = pos
+
+                upsert_participation_count += 1
 
             upsert_match_count += 1
 
         db.commit()
-        return {
-            "event_code": event_code,
-            "season": season,
-            "teams_upserted": upsert_team_count,
-            "matches_upserted": upsert_match_count,
-            "participations_upserted": upsert_participation_count,
-        }
+
+        return upsert_team_count, upsert_match_count, upsert_participation_count

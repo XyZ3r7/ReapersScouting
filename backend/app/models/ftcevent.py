@@ -6,7 +6,8 @@ from app.core.db import Base
 
 
 class Team(Base):
-    __tablename__ = "teams"
+    # __tablename__ = "teams"
+    __tablename__ = "event_teams"
 
     team_number: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str | None] = mapped_column(String(256), nullable=True)
