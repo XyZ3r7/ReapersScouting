@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  reapers-db:
+    image: mariadb:10.6
+    container_name: reapers-db
+    environment:
+      - MARIADB_ROOT_PASSWORD=your_password
+      - MARIADB_DATABASE=reapers_scouting
+    volumes:
+      - ./db_data:/var/lib/mysql
+
+  reapers-app:
+    build: .
+    container_name: reapers-app
+    depends_on:
+      - reapers-db
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:mariadb://reapers-db:3306/reapers_scouting
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=your_password
+      - SERVER_FORWARD_HEADERS_STRATEGY=framework
+
+  reapers-nginx:
+    image: nginx:alpine
+    container_name: reapers-nginx
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8888:80"
+    depends_on:
+      - reapers-app
+
+  cloudflared-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    command: tunnel --no-autoupdate run --token
+    depends_on:
+      - reapers-nginx

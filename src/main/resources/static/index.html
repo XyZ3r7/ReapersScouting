@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>REAPERS Scouting 2026</title>
+    <style>
+        :root { --primary: #007bff; --bg: #f4f4f4; --card: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background: var(--bg); height: 100vh; display: flex; flex-direction: column; }
+        .banner { background: #333; color: white; padding: 10px 20px; display: flex; align-items: center; }
+        .nav-btn { background: none; border: 1px solid white; color: white; padding: 8px 15px; margin-right: 10px; cursor: pointer; border-radius: 4px; }
+        .nav-btn.active { background: var(--primary); border-color: var(--primary); }
+        .page { display: none; padding: 20px; flex: 1; gap: 20px; overflow: hidden; }
+        .page.active { display: flex; }
+        .column { background: var(--card); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+        .browser-container { flex: 1; overflow-y: auto; margin-top: 10px; }
+        .item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
+        .item:hover { background: #f8f9fa; }
+        .back-btn { background: #6c757d; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px; margin-bottom: 10px; }
+        .red { color: #d32f2f; font-weight: bold; margin-right: 8px; cursor: pointer; border: 1px solid transparent; padding: 2px; }
+        .blue { color: #1976d2; font-weight: bold; margin-right: 8px; cursor: pointer; border: 1px solid transparent; padding: 2px; }
+        .red:hover, .blue:hover { border-color: #ccc; background: #eee; }
+        .scouting-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; border: 1px solid #ccc; margin-top: 10px; }
+        .grid-header { background: #eee; font-weight: bold; padding: 8px; border-bottom: 1px solid #ccc; text-align: center; }
+        .grid-col { padding: 15px; border-right: 1px solid #ccc; }
+        .grid-col:last-child { border-right: none; }
+        input[type="text"], input[type="number"], textarea { border: 1px solid #ddd; padding: 8px; border-radius: 4px; }
+        .report-view-card { border: 1px solid #ddd; margin-bottom: 15px; border-radius: 8px; background: white; }
+    </style>
+</head>
+<body>
+
+<div class="banner">
+    <div style="font-weight: bold; margin-right: 30px;">REAPERS 2026</div>
+    <button class="nav-btn active" onclick="showPage('scoutPage', this)">1. Scout</button>
+    <button class="nav-btn" onclick="showPage('viewPage', this)">2. Reports</button>
+</div>
+
+<div id="scoutPage" class="page active">
+    <div class="column" style="flex: 1;">
+        <div id="browserHeader"><h3 style="margin:0 0 10px 0;">Select Event</h3></div>
+        <div id="browserContent" class="browser-container">Loading...</div>
+    </div>
+
+    <div class="column" style="flex: 2;">
+        <h3>Scouting Form</h3>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <input type="text" id="teamNumber" placeholder="Team ID (Required)" style="width: 20%;">
+            <input type="text" id="matchNumber" placeholder="Full Match Name" style="width: 60%;">
+            <button onclick="resetForm()" style="width: 20%; background:#6c757d; color:white; border:none; cursor:pointer; border-radius:4px;">Clear All</button>
+        </div>
+
+        <div class="scouting-grid">
+            <div><div class="grid-header">Auton</div><div class="grid-col">
+                <label>Range (Optional):</label><br>
+                <input type="radio" name="range" value="near"> Near <input type="radio" name="range" value="far"> Far<br><br>
+                <label>Artifacts:</label><br>
+                <input type="number" id="artifacts" style="width: 60px;">
+            </div></div>
+            <div><div class="grid-header">Teleop</div><div class="grid-col">
+                <label>Max Score (No Pat):</label><br>
+                <input type="number" id="scoreNo" style="width: 60px;"><br><br>
+                <label>Max Score (Pat):</label><br>
+                <input type="number" id="scoreWith" style="width: 60px;"><br><br>
+                <label>Human Player?</label><br>
+                <input type="radio" name="human" value="yes"> Y <input type="radio" name="human" value="no"> N
+            </div></div>
+            <div><div class="grid-header">Endgame</div><div class="grid-col">
+                <label>Lifting for Park?</label><br>
+                <input type="radio" name="lifting" value="yes"> Y <input type="radio" name="lifting" value="no"> N
+            </div></div>
+        </div>
+        <div style="margin-top:10px;">
+            <label>Notes (Optional):</label>
+            <textarea id="notes" style="width: 100%; height: 60px;"></textarea>
+        </div>
+        <button onclick="submitReport()" style="margin-top:15px; padding:12px; background:#28a745; color:white; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">SAVE REPORT</button>
+    </div>
+</div>
+
+<div id="viewPage" class="page">
+    <div class="column" style="flex: 1; overflow-y: auto;">
+        <h3>View History</h3>
+        <input type="text" id="searchTeam" placeholder="Enter 5-digit Team ID..." oninput="if(this.value.length>=1) fetchHistory(this.value)">
+        <div id="historyList" style="margin-top:15px;"></div>
+    </div>
+</div>
+
+<script>
+    const API = "/api";
+    let currentEventName = "";
+
+    function showPage(id, btn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    async function loadEvents() {
+        const content = document.getElementById('browserContent');
+        const header = document.getElementById('browserHeader');
+        header.innerHTML = '<h3 style="margin:0 0 10px 0;">Select Event</h3>';
+        try {
+            const res = await fetch(`${API}/test-api`);
+            const events = await res.json();
+            content.innerHTML = events.map(e => `
+                <div class="item" onclick="loadMatches('${e.code}', '${e.name}')">
+                    <strong>${e.name}</strong><br><small>${e.dateStart.split('T')[0]}</small>
+                </div>
+            `).join('');
+        } catch (error) {
+            content.innerHTML = "Error loading events. Check API connectivity.";
+            console.error(error);
+        }
+    }
+
+    async function loadMatches(eventCode, eventName) {
+        currentEventName = eventName;
+        const content = document.getElementById('browserContent');
+        const header = document.getElementById('browserHeader');
+        header.innerHTML = `<button class="back-btn" onclick="loadEvents()">← Back</button><h4 style="margin:0;">${eventName}</h4>`;
+        try {
+            const res = await fetch(`${API}/matches/${eventCode}`);
+            const data = await res.json();
+            content.innerHTML = data.matches.map(m => `
+                <div class="item">
+                    <div style="font-weight:bold; margin-bottom:5px;">${m.description}</div>
+                    ${m.teams.map(t => `
+                        <span class="${t.station.includes('Red')?'red':'blue'}"
+                              onclick="autoFill('${t.teamNumber}', '${m.description}')">
+                            ${t.teamNumber}
+                        </span>
+                    `).join(' ')}
+                </div>
+            `).join('');
+        } catch (error) {
+            content.innerHTML = "Error loading matches.";
+            console.error(error);
+        }
+    }
+
+    function autoFill(team, matchDesc) {
+        document.getElementById('teamNumber').value = team;
+        document.getElementById('matchNumber').value = `${currentEventName} - ${matchDesc}`;
+    }
+
+    function resetForm() {
+        document.getElementById('teamNumber').value = '';
+        document.getElementById('matchNumber').value = '';
+        document.getElementById('artifacts').value = '';
+        document.getElementById('scoreNo').value = '';
+        document.getElementById('scoreWith').value = '';
+        document.getElementById('notes').value = '';
+        document.querySelectorAll('input[type="radio"]').forEach(r => r.checked = false);
+    }
+
+    async function submitReport() {
+        if(!document.getElementById('teamNumber').value) {
+            alert("Team Number is required.");
+            return;
+        }
+        const body = {
+            teamNumber: document.getElementById('teamNumber').value,
+            matchNumber: document.getElementById('matchNumber').value || "Manual Entry",
+            shootingRange: document.querySelector('input[name="range"]:checked')?.value || "N/A",
+            artifactsCount: document.getElementById('artifacts').value || 0,
+            maxScoreNoPattern: document.getElementById('scoreNo').value || 0,
+            maxScoreWithPattern: document.getElementById('scoreWith').value || 0,
+            needsHumanPlayer: document.querySelector('input[name="human"]:checked')?.value || "N/A",
+            hasLifting: document.querySelector('input[name="lifting"]:checked')?.value || "N/A",
+            notes: document.getElementById('notes').value || ""
+        };
+        try {
+            const res = await fetch(`${API}/reports`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(body)
+            });
+            if (res.ok) {
+                alert("Report Saved!");
+                resetForm();
+            } else {
+                alert("Error saving report.");
+            }
+        } catch (error) {
+            alert("Network error.");
+            console.error(error);
+        }
+    }
+
+    async function fetchHistory(num) {
+        try {
+            const res = await fetch(`${API}/reports/${num}`);
+            const data = await res.json();
+            document.getElementById('historyList').innerHTML = data.map(r => `
+                <div class="report-view-card">
+                    <div style="background:#444; color:white; padding:8px; font-size:0.85em;">
+                        ${r.matchNumber} | Team ${r.teamNumber}
+                    </div>
+                    <div style="display:flex; font-size:0.8em; padding:10px; gap:10px;">
+                        <div><strong>Auton:</strong> ${r.shootingRange}, Art:${r.artifactsCount}</div>
+                        <div><strong>Teleop:</strong> NoPat:${r.maxScoreNoPattern}, Pat:${r.maxScoreWithPattern}</div>
+                        <div><strong>End:</strong> Lift:${r.hasLifting}</div>
+                    </div>
+                    <div style="padding:10px; border-top:1px solid #eee; background:#fffde7; font-size:0.9em;">${r.notes || "No notes."}</div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    window.onload = loadEvents;
+</script>
+</body>
+</html>
